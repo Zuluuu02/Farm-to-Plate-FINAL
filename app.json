@@ -1,42 +1,43 @@
 {
   "expo": {
-    "name": "farm-to-plate-FINAL",
-    "slug": "farm-to-plate-FINAL",
+    "name": "Farm to Plate",
+    "slug": "ecommerce-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "farmtoplatefinal",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "icon": "./assets/farmtoplate.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/farmtoplate.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need to access your camera to take pictures.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to upload images."
+      }
     },
     "android": {
+      "package": "com.teamvatte.farmtoplate",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/farmtoplate.png"
       },
-      "edgeToEdgeEnabled": true
+      "jsEngine": "hermes",
+      "newArchEnabled": true
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-font",
+      "expo-asset"
     ],
-    "experiments": {
-      "typedRoutes": true
+    "extra": {
+      "eas": {
+        "projectId": "bc016606-a7b4-4e28-a78c-f7b260da1ff8"
+      }
     }
   }
 }
