@@ -1,55 +1,61 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
+// --- FAQ Data ---
 const faqData = [
-  { question: 'how do i place an order', answer: 'Browse products, add items to your cart, and proceed to checkout. Select your delivery address and payment method to confirm your order.' },
-  { question: 'what is platepro', answer: 'PlatePro is our premium membership offering exclusive perks like free delivery, discounts, and surprise benefits. Learn more in the Membership section.' },
-  { question: 'how do i list my products', answer: 'Log in to your farmer account, go to "My Products," and upload details, including photos, pricing, and quantity.' },
-  { question: 'how do i manage orders', answer: 'Check the "Orders" section in your dashboard to view, confirm, and update the status of orders.' },
-  { question: "what happens if i can't fulfill an order", answer: 'Notify us immediately through the Contact Support option, and we will assist in resolving the issue with the consumer.' },
-  { question: 'how do i track my order', answer: 'Go to "My Orders" in your account to view the status and estimated delivery time of your order.' },
-  { question: 'can i cancel my order', answer: 'Orders can be canceled before they are processed. Go to "My Orders" and select "Cancel" for eligible orders.' },
-  { question: 'what if there’s an issue with my delivery', answer: 'If there’s a delay or problem, contact our support team through the Help section or via chat.' },
-  { question: 'how do i subscribe to platepro', answer: 'Go to Profile in the app and “Become a pro”. Choose your payment plan (monthly or annually) to activate.' },
-  { question: 'how do i use my perks', answer: 'Perks like free delivery or discounts are automatically applied at checkout.' },
-  { question: 'can i cancel my subscription', answer: 'Yes, you can cancel anytime from the “PlatePro" section. Benefits will remain active until the billing cycle ends.' },
-  { question: 'what payment methods do you accept', answer: 'We accept e-wallets, and cash on delivery (COD).' },
-  { question: 'how do i request a refund', answer: 'Contact our support team with your order details. Refunds will be processed within 7-10 business days, depending on the payment method.' },
-  { question: 'i forgot my password. how do i reset it', answer: 'Click "Forgot Password" on the login page, enter your email, and follow the reset instructions.' },
-  { question: 'why can’t i log in', answer: 'Ensure your account details are correct, and your internet connection is stable. If the issue persists, contact support.' },
-  { question: 'what should i do if the app crashes', answer: 'Update the app to the latest version. If the problem continues, report the issue through the "Report a Bug" option in the app.' },
+  { question: 'how do i place an order', answer: 'Browse products, add items to your cart, and proceed to checkout...' },
+  { question: 'what is platepro', answer: 'PlatePro is our premium membership with perks like free delivery and discounts.' },
+  { question: 'how do i list my products', answer: 'Log in to your farmer account and upload your product details.' },
+  { question: 'how do i manage orders', answer: 'Manage orders in the "Orders" section of your dashboard.' },
+  { question: "what happens if i can't fulfill an order", answer: 'Contact support immediately and we’ll assist in resolving it.' },
+  { question: 'how do i track my order', answer: 'Track your order from the "My Orders" section in your profile.' },
+  { question: 'can i cancel my order', answer: 'Orders can be canceled before processing from "My Orders".' },
+  { question: 'what if there’s an issue with my delivery', answer: 'Contact support via chat or the Help section.' },
+  { question: 'how do i subscribe to platepro', answer: 'Go to Profile > “Become a Pro”, choose a plan, and subscribe.' },
+  { question: 'how do i use my perks', answer: 'Perks apply automatically during checkout.' },
+  { question: 'can i cancel my subscription', answer: 'Yes, cancel anytime in “PlatePro” settings. Benefits stay active until billing ends.' },
+  { question: 'what payment methods do you accept', answer: 'We accept e-wallets and Cash on Delivery (COD).' },
+  { question: 'how do i request a refund', answer: 'Submit a request with order details. Refunds process in 7–10 business days.' },
+  { question: 'i forgot my password. how do i reset it', answer: 'Tap “Forgot Password”, enter your email, and follow the steps.' },
+  { question: 'why can’t i log in', answer: 'Check your credentials and network. Still stuck? Contact support.' },
+  { question: 'what should i do if the app crashes', answer: 'Update to the latest version or report via "Bug Report" section.' },
 ];
 
+// --- Similarity Helper ---
+const getSimilarityScore = (a, b) => {
+  const setA = new Set(a.toLowerCase().split(' '));
+  const setB = new Set(b.toLowerCase().split(' '));
+  const common = [...setA].filter(word => setB.has(word));
+  return common.length / Math.max(setA.size, setB.size);
+};
+
 export default function VirtualAssistantScreen() {
+  const navigation = useNavigation();
+
   const [messages, setMessages] = useState([
     { id: '1', text: 'Hi! How can I help you today?', sender: 'assistant' }
   ]);
   const [input, setInput] = useState('');
 
-  const getBotReply = (userInput) => {
-    const normalizedInput = userInput.toLowerCase().trim();
-
+  const generateReply = (userInput) => {
+    const input = userInput.trim().toLowerCase();
     let bestMatch = null;
     let highestScore = 0;
 
-    for (let faq of faqData) {
-      const faqQuestion = faq.question.toLowerCase();
-      const faqWords = faqQuestion.split(' ');
-      const inputWords = normalizedInput.split(' ');
-
-      const commonWords = inputWords.filter(word => faqWords.includes(word));
-      const score = commonWords.length / faqWords.length;
-
+    for (const faq of faqData) {
+      const score = getSimilarityScore(faq.question, input);
       if (score > highestScore) {
         highestScore = score;
         bestMatch = faq;
@@ -57,21 +63,19 @@ export default function VirtualAssistantScreen() {
     }
 
     if (highestScore >= 0.3 && bestMatch) {
-      return `${bestMatch.answer} 😊 Is there anything else I can help you with?`;
+      return `${bestMatch.answer} 😊 Anything else you'd like to ask?`;
     }
 
-    return "Sorry, I couldn't find an answer for that. Please contact support. 😊";
+    return "I'm sorry, I couldn't find an answer to that. Please contact our support team for help. 😊";
   };
 
   const handleSend = () => {
     if (!input.trim()) return;
 
     const userMessage = { id: Date.now().toString(), text: input, sender: 'user' };
-    const botReply = getBotReply(input);
-
     const assistantMessage = {
       id: (Date.now() + 1).toString(),
-      text: botReply,
+      text: generateReply(input),
       sender: 'assistant'
     };
 
@@ -91,49 +95,72 @@ export default function VirtualAssistantScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={100}
-    >
-      <Text style={styles.header}>Virtual Assistant</Text>
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messageList}
-      />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type your message..."
-          value={input}
-          onChangeText={setInput}
+    <SafeAreaView style={styles.safeContainer}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={100}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Virtual Assistant</Text>
+        </View>
+
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.messageList}
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Ionicons name="send" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+
+        <View style={styles.inputSection}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type your message..."
+            value={input}
+            onChangeText={setInput}
+          />
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Ionicons name="send" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2' },
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#f9f9f9'
+  },
+  container: {
+    flex: 1
+  },
   header: {
-    paddingTop: 50,
-    paddingBottom: 10,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#4CAF50',
+    paddingHorizontal: 10,
+    paddingVertical: 15
+  },
+  backButton: {
+    marginRight: 10
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
     color: '#fff'
   },
-  messageList: { padding: 10 },
+  messageList: {
+    padding: 12
+  },
   messageContainer: {
     padding: 10,
-    borderRadius: 10,
-    marginVertical: 5,
+    borderRadius: 8,
+    marginVertical: 6,
     maxWidth: '80%'
   },
   userMessage: {
@@ -141,22 +168,32 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end'
   },
   assistantMessage: {
-    backgroundColor: '#eee',
+    backgroundColor: '#eaeaea',
     alignSelf: 'flex-start'
   },
-  messageText: { fontSize: 16 },
-  inputContainer: {
+  messageText: {
+    fontSize: 15
+  },
+  inputSection: {
     flexDirection: 'row',
     padding: 10,
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderColor: '#ccc'
+    borderTopColor: '#ccc',
+    borderTopWidth: 1
   },
-  input: { flex: 1, fontSize: 16, padding: 10, backgroundColor: '#eee', borderRadius: 20 },
+  input: {
+    flex: 1,
+    backgroundColor: '#eee',
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    fontSize: 15
+  },
   sendButton: {
-    marginLeft: 10,
     backgroundColor: '#4CAF50',
-    borderRadius: 20,
-    padding: 10
+    borderRadius: 25,
+    padding: 12,
+    marginLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 });
