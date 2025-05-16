@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../providers/AuthProvider';
-import { db } from '../firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useContext, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { db } from '../firebaseConfig';
+import { AuthContext } from '../providers/AuthProvider';
 
 const OrderDetailsScreen = ({ route, navigation }) => {
   const { orderId } = route.params; // Receive the orderId from navigation
@@ -81,11 +81,11 @@ const OrderDetailsScreen = ({ route, navigation }) => {
         </View>
       </View>
 
-      {/* Order Status */}
+       {/* Order Status */}
       <View style={styles.orderStatusContainer}>
         <Text style={styles.statusTitle}>Order Status: </Text>
-        <Text style={[styles.statusText, styles[orderDetails?.status.toLowerCase()]]}>
-          {orderDetails?.status}
+        <Text style={[styles.statusText, statusStyle]}>
+          {orderDetails?.status || 'Pending'}
         </Text>
       </View>
 
