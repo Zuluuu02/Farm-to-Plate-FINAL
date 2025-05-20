@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Fuse from 'fuse.js';
+import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -14,32 +14,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-
-// --- FAQ Data ---
-const faqData = [
-  { question: 'how do i place an order', answer: 'Browse products, add items to your cart, and proceed to checkout...' },
-  { question: 'what is platepro', answer: 'PlatePro is our premium membership with perks like free delivery and discounts.' },
-  { question: 'how do i list my products', answer: 'Log in to your farmer account and upload your product details.' },
-  { question: 'how do i manage orders', answer: 'Manage orders in the "Orders" section of your dashboard.' },
-  { question: "what happens if i can't fulfill an order", answer: 'Contact support immediately and we’ll assist in resolving it.' },
-  { question: 'how do i track my order', answer: 'Track your order from the "My Orders" section in your profile.' },
-  { question: 'can i cancel my order', answer: 'Orders can be canceled before processing from "My Orders".' },
-  { question: 'what if there’s an issue with my delivery', answer: 'Contact support via chat or the Help section.' },
-  { question: 'how do i subscribe to platepro', answer: 'Go to Profile > “Become a Pro”, choose a plan, and subscribe.' },
-  { question: 'how do i use my perks', answer: 'Perks apply automatically during checkout.' },
-  { question: 'can i cancel my subscription', answer: 'Yes, cancel anytime in “PlatePro” settings. Benefits stay active until billing ends.' },
-  { question: 'what payment methods do you accept', answer: 'We accept e-wallets and Cash on Delivery (COD).' },
-  { question: 'how do i request a refund', answer: 'Submit a request with order details. Refunds process in 7–10 business days.' },
-  { question: 'i forgot my password. how do i reset it', answer: 'Tap “Forgot Password”, enter your email, and follow the steps.' },
-  { question: 'why can’t i log in', answer: 'Check your credentials and network. Still stuck? Contact support.' },
-  { question: 'what should i do if the app crashes', answer: 'Update to the latest version or report via "Bug Report" section.' },
-];
-
-// --- Fuse.js Setup ---
-const fuse = new Fuse(faqData, {
-  keys: ['question'],
-  threshold: 0.4,
-});
+import { ftpContext } from './ftpQuestions';
+import { GROQ_API_KEY, GROQ_API_URL, GROQ_MODEL } from './groqConfig';
 
 export default function VirtualAssistantScreen() {
   const navigation = useNavigation();
@@ -49,50 +25,56 @@ export default function VirtualAssistantScreen() {
     { id: '1', text: 'Hi! How can I help you today?', sender: 'assistant' }
   ]);
   const [input, setInput] = useState('');
-  const [lastSuggestedFAQ, setLastSuggestedFAQ] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const generateReply = (userInput) => {
-    const input = userInput.trim().toLowerCase();
-
-    // Handle confirmation response
-    if (lastSuggestedFAQ) {
-      if (['yes', 'yep', 'yeah', 'correct'].includes(input)) {
-        const reply = lastSuggestedFAQ.answer;
-        setLastSuggestedFAQ(null);
-        return `${reply} 😊 Anything else you'd like to ask?`;
-      } else if (['no', 'nope', 'nah'].includes(input)) {
-        setLastSuggestedFAQ(null);
-        return `Okay, no problem! You can rephrase your question or ask about something else. 😊`;
+ const generateReply = async (userInput) => {
+  try {
+    const response = await axios.post(
+      GROQ_API_URL,
+      {
+        model: GROQ_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a helpful assistant for the Plateful app. Use the following context to answer questions:\n\n${ftpContext}`
+          },
+          { role: 'user', content: userInput }
+        ]
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
       }
-    }
+    );
 
-    // Standard Fuse.js search
-    const results = fuse.search(input);
-
-    if (results.length > 0) {
-      const { question, answer } = results[0].item;
-      setLastSuggestedFAQ(results[0].item);
-      return `Answer: ${answer} 😊\n\nDid you mean: "${question}"?`;
-    }
-
-    return "I'm sorry, I couldn't find an answer to that. Please contact our support team for help. 😊";
-  };
-
-  const handleSend = () => {
+    return response.data.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Groq error:', error.message);
+    return "Sorry, I'm having trouble right now. Please try again later.";
+  }
+}; const handleSend = async () => {
     if (!input.trim()) return;
 
     Keyboard.dismiss();
+    setLoading(true);
 
     const timestamp = Date.now().toString();
     const userMessage = { id: timestamp, text: input, sender: 'user' };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+
+    const reply = await generateReply(input);
     const assistantMessage = {
       id: (parseInt(timestamp) + 1).toString(),
-      text: generateReply(input),
+      text: reply,
       sender: 'assistant'
     };
 
-    setMessages(prev => [...prev, userMessage, assistantMessage]);
-    setInput('');
+    setMessages(prev => [...prev, assistantMessage]);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -139,8 +121,9 @@ export default function VirtualAssistantScreen() {
             placeholderTextColor="#888"
             value={input}
             onChangeText={setInput}
+            editable={!loading}
           />
-          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton} disabled={loading}>
             <Ionicons name="send" size={22} color="#fff" />
           </TouchableOpacity>
         </View>

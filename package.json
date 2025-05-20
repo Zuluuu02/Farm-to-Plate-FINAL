@@ -23,6 +23,7 @@
     "@react-navigation/stack": "^6.4.1",
     "@supabase/auth-js": "^2.67.2",
     "@supabase/supabase-js": "^2.47.8",
+    "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "expo": "~52.0.46",
     "expo-asset": "~11.0.1",
