@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import Fuse from 'fuse.js';
+import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -33,37 +35,44 @@ const faqData = [
   { question: 'what should i do if the app crashes', answer: 'Update to the latest version or report via "Bug Report" section.' },
 ];
 
-// --- Similarity Helper ---
-const getSimilarityScore = (a, b) => {
-  const setA = new Set(a.toLowerCase().split(' '));
-  const setB = new Set(b.toLowerCase().split(' '));
-  const common = [...setA].filter(word => setB.has(word));
-  return common.length / Math.max(setA.size, setB.size);
-};
+// --- Fuse.js Setup ---
+const fuse = new Fuse(faqData, {
+  keys: ['question'],
+  threshold: 0.4,
+});
 
 export default function VirtualAssistantScreen() {
   const navigation = useNavigation();
+  const flatListRef = useRef(null);
 
   const [messages, setMessages] = useState([
     { id: '1', text: 'Hi! How can I help you today?', sender: 'assistant' }
   ]);
   const [input, setInput] = useState('');
+  const [lastSuggestedFAQ, setLastSuggestedFAQ] = useState(null);
 
   const generateReply = (userInput) => {
     const input = userInput.trim().toLowerCase();
-    let bestMatch = null;
-    let highestScore = 0;
 
-    for (const faq of faqData) {
-      const score = getSimilarityScore(faq.question, input);
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = faq;
+    // Handle confirmation response
+    if (lastSuggestedFAQ) {
+      if (['yes', 'yep', 'yeah', 'correct'].includes(input)) {
+        const reply = lastSuggestedFAQ.answer;
+        setLastSuggestedFAQ(null);
+        return `${reply} 😊 Anything else you'd like to ask?`;
+      } else if (['no', 'nope', 'nah'].includes(input)) {
+        setLastSuggestedFAQ(null);
+        return `Okay, no problem! You can rephrase your question or ask about something else. 😊`;
       }
     }
 
-    if (highestScore >= 0.3 && bestMatch) {
-      return `${bestMatch.answer} 😊 Anything else you'd like to ask?`;
+    // Standard Fuse.js search
+    const results = fuse.search(input);
+
+    if (results.length > 0) {
+      const { question, answer } = results[0].item;
+      setLastSuggestedFAQ(results[0].item);
+      return `Answer: ${answer} 😊\n\nDid you mean: "${question}"?`;
     }
 
     return "I'm sorry, I couldn't find an answer to that. Please contact our support team for help. 😊";
@@ -72,9 +81,12 @@ export default function VirtualAssistantScreen() {
   const handleSend = () => {
     if (!input.trim()) return;
 
-    const userMessage = { id: Date.now().toString(), text: input, sender: 'user' };
+    Keyboard.dismiss();
+
+    const timestamp = Date.now().toString();
+    const userMessage = { id: timestamp, text: input, sender: 'user' };
     const assistantMessage = {
-      id: (Date.now() + 1).toString(),
+      id: (parseInt(timestamp) + 1).toString(),
       text: generateReply(input),
       sender: 'assistant'
     };
@@ -82,6 +94,10 @@ export default function VirtualAssistantScreen() {
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setInput('');
   };
+
+  useEffect(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
 
   const renderMessage = ({ item }) => (
     <View
@@ -109,6 +125,7 @@ export default function VirtualAssistantScreen() {
         </View>
 
         <FlatList
+          ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
           keyExtractor={item => item.id}
@@ -119,6 +136,7 @@ export default function VirtualAssistantScreen() {
           <TextInput
             style={styles.input}
             placeholder="Type your message..."
+            placeholderTextColor="#888"
             value={input}
             onChangeText={setInput}
           />
