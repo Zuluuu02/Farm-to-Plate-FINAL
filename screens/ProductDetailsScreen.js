@@ -1,17 +1,17 @@
-import React, { useState, useContext } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-} from 'react-native';
-import { doc, collection, addDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig";
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { addDoc, collection, doc } from "firebase/firestore";
+import { useContext, useState } from 'react';
+import {
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { db } from "../firebaseConfig";
 import { AuthContext } from '../providers/AuthProvider';
 
 export default function ProductDetailsScreen({ route, navigation }) {
